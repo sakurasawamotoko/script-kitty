@@ -1,2 +1,2 @@
-# ronri-ni-motozuite-ro-ru
+# scriptkitty
 論理にもとづいてロール
