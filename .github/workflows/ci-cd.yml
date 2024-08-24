@@ -39,6 +39,11 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+          DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+          ROLE_TWITCHSUB_ID: ${{ secrets.DISCORD_ROLE_TWITCH_SUB_ID }}
+          ROLE_BOOSTER_ID: ${{ secrets.DISCORD_ROLE_DISCORD_BOOSTER_ID }}
+          ROLE_SUPPORTER_ID: ${{ secrets.DISCORD_ROLE_SUPPORTERS_ID }}
         run: |
           cd terraform
           terraform init
