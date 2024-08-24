@@ -3,7 +3,7 @@ provider "aws" {
 }
 
 resource "aws_lambda_function" "example" {
-  function_name = "example_lambda"
+  function_name = "scriptkitty"
   role          = aws_iam_role.iam_for_lambda.arn
   handler       = "main.lambda_handler"
   runtime       = "python3.9"
