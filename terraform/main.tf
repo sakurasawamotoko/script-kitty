@@ -22,7 +22,7 @@ resource "null_resource" "build_and_push" {
 # Lambda function using the Docker image
 resource "aws_lambda_function" "scriptkitty_lambda" {
   function_name = "scriptkitty-docker-lambda"
-  image_uri     = "${aws_ecr_repository.my_lambda_repo.repository_url}:latest"
+  image_uri     = "${aws_ecr_repository.scriptkitty_repo.repository_url}:latest"
   role          = aws_iam_role.lambda_exec.arn
 }
 
