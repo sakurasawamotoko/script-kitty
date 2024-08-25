@@ -3,10 +3,10 @@ provider "aws" {
 }
 
 resource "aws_lambda_function" "scriptkitty_lambda_function" {
-  function_name = "my-lambda-function"
+  function_name = "scriptkitty-lambda-function"
   role          = aws_iam_role.lambda_role.arn
   package_type  = "Image"
-  image_uri     = "your-account-id.dkr.ecr.your-region.amazonaws.com/my-lambda-function:latest"
+  image_uri     = "058264132929.dkr.ecr.ap-northeast-1.amazonaws.com/scriptkitty-lambda-function:latest"
 
   environment {
     variables = {
