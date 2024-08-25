@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r app/requirements.txt
 
       - name: Test
         run: |
@@ -32,9 +32,18 @@ jobs:
           echo "Running tests..."
 
       - name: Build Docker image
-        run: |
-          docker build -t my-app .
+        run: docker build -t scriptkitty-lambda-function .
 
+      - name: Authenticate to AWS ECR
+        run: |
+          aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com
+  
+      - name: Tag Docker image
+        run: docker tag my-lambda-function:latest 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com/my-lambda-function:latest
+  
+      - name: Push Docker image to ECR
+        run: docker push 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com/my-lambda-function:latest
+  
       - name: Deploy to AWS using Terraform
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
