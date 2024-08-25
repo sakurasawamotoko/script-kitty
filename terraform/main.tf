@@ -2,12 +2,28 @@ provider "aws" {
   region = "ap-northeast-1"
 }
 
-resource "aws_lambda_function" "example" {
-  function_name = "scriptkitty"
-  role          = aws_iam_role.iam_for_lambda.arn
-  handler       = "main.lambda_handler"
-  runtime       = "python3.9"
-  filename      = data.archive_file.lambda_zip.output_path
+# ECR Repository to store the Docker image
+resource "aws_ecr_repository" "scriptkitty_repo" {
+  name = "scriptkitty-repo"
+}
+
+# Build the Docker image and push to ECR
+resource "null_resource" "build_and_push" {
+  provisioner "local-exec" {
+    command = <<EOT
+      aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.scriptkitty_repo.repository_url}
+      docker build -t ${aws_ecr_repository.scriptkitty_repo.repository_url}:latest .
+      docker push ${aws_ecr_repository.scriptkitty_repo.repository_url}:latest
+    EOT
+  }
+  depends_on = [aws_ecr_repository.scriptkitty_repo]
+}
+
+# Lambda function using the Docker image
+resource "aws_lambda_function" "scriptkitty_lambda" {
+  function_name = "scriptkitty-docker-lambda"
+  image_uri     = "${aws_ecr_repository.my_lambda_repo.repository_url}:latest"
+  role          = aws_iam_role.lambda_exec.arn
 }
 
 resource "aws_iam_role" "iam_for_lambda" {
@@ -23,10 +39,8 @@ resource "aws_iam_role" "iam_for_lambda" {
       }
     }]
   })
-}
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_dir  = "../src"
-  output_path = "../lambda.zip"
+  managed_policy_arns = [
+  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+  ]
 }
