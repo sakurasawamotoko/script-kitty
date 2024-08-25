@@ -45,6 +45,12 @@ jobs:
       uses: hashicorp/setup-terraform@v1
 
     - name: Terraform Init
+      env:
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        DISCORD_ROLE_DISCORD_BOOSTER_ID: ${{ secrets.DISCORD_ROLE_DISCORD_BOOSTER_ID }}
+        DISCORD_ROLE_TWITCH_SUB_ID: ${{ secrets.DISCORD_ROLE_TWITCH_SUB_ID }}
+        DISCORD_ROLE_SUPPORTERS_ID: ${{ secrets.DISCORD_ROLE_SUPPORTERS_ID }}
       run: terraform init
       working-directory: terraform
 
