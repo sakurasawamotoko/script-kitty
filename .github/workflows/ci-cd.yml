@@ -5,13 +5,6 @@ on:
     branches:
       - main
 
-  env:
-    DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-    DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
-    DISCORD_ROLE_DISCORD_BOOSTER_ID: ${{ secrets.DISCORD_ROLE_DISCORD_BOOSTER_ID }}
-    DISCORD_ROLE_TWITCH_SUB_ID: ${{ secrets.DISCORD_ROLE_TWITCH_SUB_ID }}
-    DISCORD_ROLE_SUPPORTERS_ID: ${{ secrets.DISCORD_ROLE_SUPPORTERS_ID }}
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -37,6 +30,12 @@ jobs:
 
     - name: Build Docker image
       run: docker build --build-arg DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN --build-arg DISCORD_GUILD_ID=$DISCORD_GUILD_ID --build-arg DISCORD_ROLE_DISCORD_BOOSTER_ID=$DISCORD_ROLE_DISCORD_BOOSTER_ID --build-arg DISCORD_ROLE_TWITCH_SUB_ID=$DISCORD_ROLE_TWITCH_SUB_ID --build-arg DISCORD_ROLE_SUPPORTERS_ID=$DISCORD_ROLE_SUPPORTERS_ID -t scriptkitty-lambda-function .
+      env:
+        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+        DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+        DISCORD_ROLE_DISCORD_BOOSTER_ID: ${{ secrets.DISCORD_ROLE_DISCORD_BOOSTER_ID }}
+        DISCORD_ROLE_TWITCH_SUB_ID: ${{ secrets.DISCORD_ROLE_TWITCH_SUB_ID }}
+        DISCORD_ROLE_SUPPORTERS_ID: ${{ secrets.DISCORD_ROLE_SUPPORTERS_ID }}
 
     - name: Authenticate to AWS ECR
       run: |
