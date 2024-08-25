@@ -14,11 +14,11 @@ load_dotenv()
 bot = commands.Bot(command_prefix='!', intents=intents)
 
 # Load environment variables
-TOKEN = os.getenv('DISCORD_BOT_TOKEN')
-GUILD_ID = int(os.getenv('DISCORD_GUILD_ID'))
-ROLE_TWITCHSUB_ID = int(os.getenv('DISCORD_ROLE_DISCORD_BOOSTER_ID'))
-ROLE_BOOSTER_ID = int(os.getenv('DISCORD_ROLE_TWITCH_SUB_ID'))
-ROLE_SUPPORTER_ID = int(os.getenv('DISCORD_ROLE_SUPPORTERS_ID'))
+TOKEN = os.environ['DISCORD_BOT_TOKEN']
+GUILD_ID = int(os.environ['DISCORD_GUILD_ID'])
+ROLE_TWITCHSUB_ID = int(os.environ['DISCORD_ROLE_DISCORD_BOOSTER_ID'])
+ROLE_BOOSTER_ID = int(os.environ['DISCORD_ROLE_TWITCH_SUB_ID'])
+ROLE_SUPPORTER_ID = int(os.environ['DISCORD_ROLE_SUPPORTERS_ID'])
 
 @tasks.loop(minutes=10)  # Check every 10 minutes
 async def check_roles():
