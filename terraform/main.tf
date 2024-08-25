@@ -2,45 +2,36 @@ provider "aws" {
   region = "ap-northeast-1"
 }
 
-# ECR Repository to store the Docker image
-resource "aws_ecr_repository" "scriptkitty_repo" {
-  name = "scriptkitty-repo"
-}
+resource "aws_lambda_function" "scriptkitty_lambda_function" {
+  function_name = "my-lambda-function"
+  role          = aws_iam_role.lambda_role.arn
+  package_type  = "Image"
+  image_uri     = "your-account-id.dkr.ecr.your-region.amazonaws.com/my-lambda-function:latest"
 
-# Build the Docker image and push to ECR
-resource "null_resource" "build_and_push" {
-  provisioner "local-exec" {
-    command = <<EOT
-      aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${aws_ecr_repository.scriptkitty_repo.repository_url}
-      docker build -t ${aws_ecr_repository.scriptkitty_repo.repository_url}:latest .
-      docker push ${aws_ecr_repository.scriptkitty_repo.repository_url}:latest
-    EOT
+  environment {
+    variables = {
+      ENV_VAR_NAME = "value"
+    }
   }
-  depends_on = [aws_ecr_repository.scriptkitty_repo]
 }
 
-# Lambda function using the Docker image
-resource "aws_lambda_function" "scriptkitty_lambda" {
-  function_name = "scriptkitty-docker-lambda"
-  image_uri     = "${aws_ecr_repository.scriptkitty_repo.repository_url}:latest"
-  role          = aws_iam_role.lambda_exec.arn
-}
+resource "aws_iam_role" "lambda_role" {
+  name = "scriptkitty_lambda_role"
 
-resource "aws_iam_role" "iam_for_lambda" {
-  name = "iam_for_lambda"
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Sid    = ""
-      Principal = {
-        Service = "lambda.amazonaws.com"
-      }
-    }]
+    Statement = [
+      {
+        Action    = "sts:AssumeRole"
+        Effect    = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      },
+    ]
   })
 
   managed_policy_arns = [
-  "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+    "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
   ]
 }
