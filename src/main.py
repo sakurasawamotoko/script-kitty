@@ -42,11 +42,11 @@ async def on_ready():
 
         if has_role_twitchsub or has_role_booster:
             if role_supporter not in member.roles:
-                await member.add_roles(role_supporter, reason=f"in recognition of {member.name}'s support")
+                await member.add_roles(role_supporter, reason=f"{member.name}のサポートに感謝します。")
                 print(f"Added role SUPPORTER to {member.name}")
         else:
             if role_supporter in member.roles:
                 await member.remove_roles(role_supporter)
-                member.add_roles(role_supporter, reason=f"{member.name} is no longer a supporter 🥺")
+                member.add_roles(role_supporter, reason=f"{member.name}は最近ギフト…🥺")
                 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
