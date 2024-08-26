@@ -42,7 +42,7 @@ resource "aws_iam_role" "lambda_role" {
 
 # IAM policy for Lambda to write logs to CloudWatch
 resource "aws_iam_role_policy_attachment" "lambda_logging" {
-  role       = aws_iam_role.lambda_execution_role.name
+  role       = aws_iam_role.lambda_role.name
   policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
 }
 
