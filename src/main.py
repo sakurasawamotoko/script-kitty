@@ -64,6 +64,6 @@ async def on_ready():
                 member.add_roles(role_supporter, reason=f'{member.name}は最近ギフト…🥺')
                 変更 = '-'
             
-        print(f'{i},{(lambda is_サポート: '[^._.^]ﾉ彡'if is_サポート else '')(サポート)},{変更},{member.name}')
+        print(f'{i},{(lambda is_サポート: "[^._.^]ﾉ彡" if is_サポート else "")(サポート)},{変更},{member.name}')
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
