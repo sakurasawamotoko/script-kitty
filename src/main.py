@@ -1,9 +1,7 @@
-import json
 import os
 import discord
 from discord.ext import tasks, commands
 from dotenv import load_dotenv
-from time import sleep
 from aws_lambda_powertools import Logger
 
 # Load env vars from .env
@@ -44,23 +42,28 @@ async def on_ready():
         logger.error({'エラー': '何か足りない。'})
         return
 
-    for member in guild.members:
-        print(f'今：{member.name}')
-        
+    for i, member in enumerate(guild.members):        
         has_role_twitchsub = role_twitchsub in member.roles
         has_role_booster = role_booster in member.roles
+        変更 = ''
+        サポート = None
 
         # memberはサポーターなの？
         # member is a supporter?
         if has_role_twitchsub or has_role_booster:
+            サポート = True
             if role_supporter not in member.roles:
                 await member.add_roles(role_supporter, reason=f'{member.name}のサポートに感謝します。')
                 logger.info({'ユーザー名': {member.name}, '変更': '+', 'ロール':role_supporter})
                 print(f'Added role SUPPORTER to {member.name}')
+                変更 = '+'
         else:
             if role_supporter in member.roles:
                 await member.remove_roles(role_supporter)
                 logger.info({'ユーザー名': {member.name}, '変更': '-', 'ロール':role_supporter})
                 member.add_roles(role_supporter, reason=f'{member.name}は最近ギフト…🥺')
+                変更 = '-'
+            
+        print(f'{i},{(lambda is_サポート: '[^._.^]ﾉ彡'if is_サポート else '')(サポート)},{変更},{member.name}')
 
 bot.run(os.environ['DISCORD_BOT_TOKEN'])
