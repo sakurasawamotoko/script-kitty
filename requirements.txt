@@ -1,2 +1,3 @@
 discord.py
 python-dotenv
+aws_lambda_powertools
