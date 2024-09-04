@@ -1,4 +1,4 @@
-FROM python:3.9-slim as base
+FROM python:alpine3.20 AS base
 
 ARG DISCORD_BOT_TOKEN=${DISCORD_BOT_TOKEN}
 ARG DISCORD_GUILD_ID=${DISCORD_GUILD_ID}
@@ -23,5 +23,5 @@ CMD ["main.lambda_handler"]
 
 # --- Stage for Local Development ---
 
-FROM base as local
+FROM base AS local
 CMD ["python", "src/main.py"]
