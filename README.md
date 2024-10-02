@@ -3,5 +3,5 @@
 ## script kittyは
 script kittyは Discord ボットです。論理にもとづいてロール。
 
-##ルール##
+## ルール
 Discord（ブースト）かTwitch（サブ）、もしくはその両方　→　サポーター
