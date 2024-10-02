@@ -1,4 +1,9 @@
 # script kitty
 
 ## script kittyは
-論理にもとづいてロール
+script kittyは Discord ボットです。論理にもとづいてロール。
+
+ロール
+Discord（ブースト）　　　　　⭕️　⭕️　❌　❌
+Twitch（チャンネルへのサブ）⭕️　❌　⭕️　❌
+→ サポーター              ⭕️　⭕️　⭕️　❌
