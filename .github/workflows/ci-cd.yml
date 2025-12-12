@@ -1,59 +1,82 @@
-name: Deploy Lambda Function
+name: Deploy Lambda Function / Lambda 関数をデプロイ
 
 on:
   push:
     branches:
-      - main
+      - main  # mainブランチにpushされたらトリガー / Triggered on push to main branch
 
 jobs:
-  build:
+  # --- Docker Build & Push Job ---
+  docker:
+    name: Build and Push Docker Image / Dockerイメージのビルドとプッシュ
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code / コードをチェックアウト
+        uses: actions/checkout@v3
 
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.12'
+      - name: Set up Python / Pythonをセットアップ
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
 
-    - name: Install dependencies
-      run: pip install -r requirements.txt
+      - name: Install Poetry / Poetryをインストール
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
 
-    - name: Set up AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-northeast-1
+      - name: Cache Poetry dependencies / Poetry依存関係のキャッシュ
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/pypoetry
+            ~/.cache/pip
+          key: ${{ runner.os }}-poetry-${{ hashFiles('pyproject.toml', 'poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-poetry-
 
-    - name: Build Docker image
-      run: docker build --build-arg DISCORD_BOT_TOKEN=$DISCORD_BOT_TOKEN --build-arg DISCORD_GUILD_ID=$DISCORD_GUILD_ID --build-arg DISCORD_ROLE_DISCORD_BOOSTER_ID=$DISCORD_ROLE_DISCORD_BOOSTER_ID --build-arg DISCORD_ROLE_TWITCH_SUB_ID=$DISCORD_ROLE_TWITCH_SUB_ID --build-arg DISCORD_ROLE_SUPPORTERS_ID=$DISCORD_ROLE_SUPPORTERS_ID -t scriptkitty-lambda-function .
-      env:
-        DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
-        DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
-        DISCORD_ROLE_DISCORD_BOOSTER_ID: ${{ secrets.DISCORD_ROLE_DISCORD_BOOSTER_ID }}
-        DISCORD_ROLE_TWITCH_SUB_ID: ${{ secrets.DISCORD_ROLE_TWITCH_SUB_ID }}
-        DISCORD_ROLE_SUPPORTERS_ID: ${{ secrets.DISCORD_ROLE_SUPPORTERS_ID }}
+      - name: Build Docker Image / Dockerイメージをビルド
+        run: |
+          docker build \
+            --build-arg DISCORD_BOT_TOKEN=${{ secrets.DISCORD_BOT_TOKEN }} \
+            --build-arg DISCORD_GUILD_ID=${{ secrets.DISCORD_GUILD_ID }} \
+            --build-arg DISCORD_ROLE_DISCORDBOOSTER=${{ secrets.DISCORD_ROLE_DISCORDBOOSTER }} \
+            --build-arg DISCORD_ROLE_TWITCHSUB=${{ secrets.DISCORD_ROLE_TWITCHSUB }} \
+            --build-arg DISCORD_ROLE_NEKOBAJI=${{ secrets.DISCORD_ROLE_NEKOBAJI }} \
+            --build-arg DISCORD_ROLE_KASUTO=${{ secrets.DISCORD_ROLE_KASUTO }} \
+            --build-arg DISCORD_ROLE_SEITOKAIYAKUIN=${{ secrets.DISCORD_ROLE_SEITOKAIYAKUIN }} \
+            --build-arg DISCORD_ROLE_GAKKYUIIN=${{ secrets.DISCORD_ROLE_GAKKYUIIN }} \
+            --build-arg DISCORD_ROLE_MANGAKA=${{ secrets.DISCORD_ROLE_MANGAKA }} \
+            -t scriptkitty-lambda-function .
 
-    - name: Authenticate to AWS ECR
-      run: |
-        aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com
+      - name: Authenticate to AWS ECR / AWS ECRにログイン
+        run: |
+          aws ecr get-login-password --region ap-northeast-1 | docker login --username AWS --password-stdin ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com
 
-    - name: Tag Docker image
-      run: docker tag scriptkitty-lambda-function:latest 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com/scriptkitty-lambda-function:latest
+      - name: Tag and Push Docker Image / Dockerイメージをタグ付けしてプッシュ
+        run: |
+          docker tag scriptkitty-lambda-function:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com/scriptkitty-lambda-function:latest
+          docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.ap-northeast-1.amazonaws.com/scriptkitty-lambda-function:latest
 
-    - name: Push Docker image to ECR
-      run: docker push 058264132929.dkr.ecr.ap-northeast-1.amazonaws.com/scriptkitty-lambda-function:latest
+  # --- Terraform Apply Job ---
+  terraform:
+    name: Terraform Apply / Terraformを適用
+    runs-on: ubuntu-latest
+    needs: docker  # Dockerイメージ作成が完了してから / Wait for Docker job
 
-    - name: Setup Terraform
-      uses: hashicorp/setup-terraform@v1
+    steps:
+      - name: Checkout code / コードをチェックアウト
+        uses: actions/checkout@v3
 
-    - name: Terraform Init
-      run: terraform init
-      working-directory: terraform
+      - name: Set up Terraform / Terraformをセットアップ
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.14.2
 
-    - name: Terraform Apply
-      run: terraform apply -auto-approve
-      working-directory: terraform
+      - name: Terraform Init / Terraform初期化
+        run: terraform init
+        working-directory: terraform
+
+      - name: Terraform Apply / Terraform適用
+        run: terraform apply -auto-approve
+        working-directory: terraform
