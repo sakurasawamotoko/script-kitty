@@ -1,0 +1,22 @@
+name: script-kitty-env
+channels:
+  - conda-forge
+dependencies:
+  - aiohttp
+  - discord.py
+  - jupyterlab
+  - matplotlib
+  - numpy
+  - pandas
+  - python=3.11
+  - python-dotenv
+  - pytorch
+  - scikit-learn
+  - scipy
+  - seaborn
+  - sentence-transformers
+  - torchaudio
+  - torchvision
+  - transformers
+
+prefix: "/Users/motoko/miniforge3/envs/script-kitty-env"
