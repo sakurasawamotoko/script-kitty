@@ -1,0 +1,72 @@
+# .github/workflows/nyankoro.yml
+name: CI/CD - にゃんころ Lambda
+
+on:
+  push:
+    paths:
+      - "にゃんころ/**"
+      - ".github/workflows/nyankころ.yml"
+    branches: [main, 'feature/**']
+  pull_request:
+    paths:
+      - "にゃんころ/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ap-northeast-1
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      FUNCTION_NAME: nyankoro-lambda
+      LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.LAMBDA_EXECUTION_ROLE_ARN }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: actions/setup-python@v4
+        with:
+          python-version: 3.12
+
+      - name: Install Poetry
+        run: |
+          python -m pip install --upgrade pip
+          pip install poetry
+
+      - name: Install dependencies
+        run: |
+          cd にゃんころ
+          poetry install --no-root --no-interaction --no-ansi
+
+      - uses: docker/setup-buildx-action@v2
+
+      - uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build & push Docker image
+        run: |
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/nyankoro:${GITHUB_SHA}
+          docker build -f にゃんころ/Dockerfile にゃんころ -t $IMAGE_URI
+          docker push $IMAGE_URI
+
+      - name: Deploy to Lambda
+        run: |
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/nyankoro:${GITHUB_SHA}
+          if aws lambda get-function --function-name $FUNCTION_NAME; then
+            aws lambda update-function-code \
+              --function-name $FUNCTION_NAME \
+              --image-uri $IMAGE_URI
+          else
+            aws lambda create-function \
+              --function-name $FUNCTION_NAME \
+              --package-type Image \
+              --code ImageUri=$IMAGE_URI \
+              --role $LAMBDA_EXECUTION_ROLE_ARN
+          fi
+
+          
