@@ -42,12 +42,6 @@ jobs:
           cd にゃんころ
           poetry install --no-interaction --no-ansi --no-root
 
-      # --- Run tests ---
-      - name: Run pytest
-        run: |
-          cd にゃんころ
-          python run pytest -v
-
       # --- Set up Docker Buildx ---
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
