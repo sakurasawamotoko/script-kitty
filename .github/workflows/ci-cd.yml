@@ -40,7 +40,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd にゃんころ
-          poetry install --no-dev
+          poetry install --without dev --no-interaction --no-ansi
 
       # --- Run tests ---
       - name: Run pytest
