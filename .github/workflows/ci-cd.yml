@@ -24,23 +24,23 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- Set up Python (for tests) ---
+      # --- Set up Python 3.12 ---
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
-      # --- Install Poetry for dependency management ---
+      # --- Install Poetry ---
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
           pip install poetry
 
-      # --- Install project dependencies (no-root) ---
+      # --- Install project dependencies ---
       - name: Install dependencies
         run: |
           cd にゃんころ
-          poetry install --no-interaction --no-ansi --no-root
+          poetry install --no-interaction --no-ansi
 
       # --- Run tests ---
       - name: Run pytest
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # --- Log in to ECR ---
+      # --- Configure AWS credentials ---
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -60,6 +60,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # --- Log in to Amazon ECR ---
       - name: Log in to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v1
 

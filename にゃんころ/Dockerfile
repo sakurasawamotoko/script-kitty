@@ -26,7 +26,7 @@ ENV DISCORD_ROLE_MANGAKA=${DISCORD_ROLE_MANGAKA}
 ENV SCRIPT_KITTY_OPENAI_KEY=${SCRIPT_KITTY_OPENAI_KEY}
 
 # --- Install dependencies for building / ビルドに必要な依存関係をインストール ---
-RUN apk add --no-cache build-base libffi-dev git
+RUN apk add --no-cache build-base libffi-dev git curl
 
 # --- Install Poetry / Poetryをインストール ---
 RUN python -m pip install --upgrade pip \
@@ -35,15 +35,16 @@ RUN python -m pip install --upgrade pip \
 # --- Set working directory / 作業ディレクトリを設定 ---
 WORKDIR /app
 
-# --- Copy only dependency files / 依存関係ファイルをコピー ---
-COPY pyproject.toml poetry.lock* /app/
+# --- Copy dependency files / 依存関係ファイルをコピー ---
+COPY にゃんころ/pyproject.toml /app/
+COPY にゃんころ/poetry.lock* /app/
 
-# --- Install Python dependencies with Poetry (no-root) / Poetryで依存関係をインストール ---
+# --- Install Python dependencies with Poetry / Poetryで依存関係をインストール ---
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi --no-root
+    && poetry install --no-interaction --no-ansi
 
 # --- Copy the rest of the app / アプリの残りのファイルをコピー ---
-COPY . .
+COPY にゃんころ/ /app/
 
 # --- Production stage: smaller Lambda image / 本番用ステージ: Lambda用に小さく ---
 FROM python:3.12-alpine AS lambda
@@ -59,4 +60,5 @@ CMD ["main.lambda_handler"]
 
 # --- Local development stage / ローカル開発用ステージ ---
 FROM base AS local
-CMD ["python", "src/main.py"]
+WORKDIR /app
+CMD ["poetry", "run", "python", "src/main.py"]
