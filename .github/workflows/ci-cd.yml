@@ -17,60 +17,43 @@ jobs:
       DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
       SCRIPT_KITTY_OPENAI_KEY: ${{ secrets.SCRIPT_KITTY_OPENAI_KEY }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      AWS_REGION: ap-northeast-1  # Keep the original Tokyo region
+      AWS_REGION: ap-northeast-1
 
     steps:
       # --- Checkout the repo ---
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- Set up Python (for dependency installation, optional) ---
+      # --- Set up Python (for tests if needed) ---
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
-      # --- Install Poetry ---
+      # --- Install Poetry for dependency management ---
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
           pip install poetry
 
-      # --- Install dependencies locally (optional for build) ---
+      # --- Install project dependencies (optional for CI) ---
       - name: Install dependencies
         run: |
           cd にゃんころ
-          poetry install --no-interaction --no-ansi --no-root
+          poetry install --no-dev --no-interaction --no-ansi
 
-      # --- Set up Docker Buildx ---
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v2
-
-      # --- Configure AWS credentials ---
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      # --- Log in to Amazon ECR ---
-      - name: Log in to Amazon ECR
-        uses: aws-actions/amazon-ecr-login@v1
-
-      # --- Build, tag (with commit SHA), and push Docker image ---
+      # --- Build, tag, and push Docker image to ECR ---
       - name: Build, tag, and push Docker image to ECR
         run: |
           cd にゃんころ
-          IMAGE_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/nyankoro:latest
+          IMAGE_TAG=${GITHUB_SHA}
+          IMAGE_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/nyankoro:$IMAGE_TAG
           docker build -f Dockerfile . -t $IMAGE_URI
           docker push $IMAGE_URI
 
       # --- Deploy to Lambda ---
       - name: Deploy to Lambda
         run: |
-          IMAGE_TAG=${GITHUB_SHA}
-          IMAGE_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/nyankoro:$IMAGE_TAG
           aws lambda update-function-code \
-            --function-name scriptkitty-lambda-function \
+            --function-name nyankoro-lambda \
             --image-uri $IMAGE_URI

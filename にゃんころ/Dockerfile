@@ -36,15 +36,15 @@ RUN python -m pip install --upgrade pip \
 WORKDIR /app
 
 # --- Copy dependency files / 依存関係ファイルをコピー ---
-COPY にゃんころ/pyproject.toml /app/
-COPY にゃんころ/poetry.lock* /app/
+COPY pyproject.toml /app/
+COPY poetry.lock* /app/
 
 # --- Install Python dependencies with Poetry / Poetryで依存関係をインストール ---
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-interaction --no-ansi
+    && poetry install --no-dev --no-interaction --no-ansi
 
 # --- Copy the rest of the app / アプリの残りのファイルをコピー ---
-COPY にゃんころ/ /app/
+COPY . /app/
 
 # --- Production stage: smaller Lambda image / 本番用ステージ: Lambda用に小さく ---
 FROM python:3.12-alpine AS lambda
@@ -60,5 +60,4 @@ CMD ["main.lambda_handler"]
 
 # --- Local development stage / ローカル開発用ステージ ---
 FROM base AS local
-WORKDIR /app
-CMD ["poetry", "run", "python", "src/main.py"]
+CMD ["python", "src/main.py"]
