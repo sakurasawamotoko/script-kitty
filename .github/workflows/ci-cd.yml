@@ -46,7 +46,7 @@ jobs:
       - name: Run pytest
         run: |
           cd にゃんころ
-          python -m pytest -v
+          python run pytest -v
 
       # --- Set up Docker Buildx ---
       - name: Set up Docker Buildx
