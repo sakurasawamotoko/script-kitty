@@ -35,12 +35,12 @@ RUN python -m pip install --upgrade pip \
 # --- Set working directory / 作業ディレクトリを設定 ---
 WORKDIR /app
 
-# --- Copy dependency files / 依存関係ファイルをコピー ---
+# --- Copy only dependency files / 依存関係ファイルをコピー ---
 COPY pyproject.toml poetry.lock* /app/
 
-# --- Install Python dependencies with Poetry / Poetryで依存関係をインストール ---
+# --- Install Python dependencies with Poetry (no-root) / Poetryで依存関係をインストール ---
 RUN poetry config virtualenvs.create false \
-    && poetry install --no-dev --no-interaction --no-ansi
+    && poetry install --no-interaction --no-ansi --no-root
 
 # --- Copy the rest of the app / アプリの残りのファイルをコピー ---
 COPY . .

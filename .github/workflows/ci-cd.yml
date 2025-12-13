@@ -24,26 +24,26 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # --- Set up Python 3.12 ---
+      # --- Set up Python (for tests) ---
       - name: Set up Python 3.12
         uses: actions/setup-python@v4
         with:
           python-version: 3.12
 
-      # --- Install Poetry ---
+      # --- Install Poetry for dependency management ---
       - name: Install Poetry
         run: |
           python -m pip install --upgrade pip
           pip install poetry
 
-      # --- Install project dependencies (including dev) ---
+      # --- Install project dependencies (no-root) ---
       - name: Install dependencies
         run: |
           cd にゃんころ
-          poetry install --no-interaction --no-ansi
+          poetry install --no-interaction --no-ansi --no-root
 
-      # --- Run pytest ---
-      - name: Run tests
+      # --- Run tests ---
+      - name: Run pytest
         run: |
           cd にゃんころ
           poetry run pytest -v
@@ -52,7 +52,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # --- Log in to AWS ECR ---
+      # --- Log in to ECR ---
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
@@ -73,7 +73,6 @@ jobs:
       # --- Deploy to Lambda ---
       - name: Deploy to Lambda
         run: |
-          IMAGE_URI=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/nyankoro:latest
           aws lambda update-function-code \
             --function-name nyankoro-lambda \
             --image-uri $IMAGE_URI
