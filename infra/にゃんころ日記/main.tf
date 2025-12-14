@@ -1,17 +1,14 @@
 # ネコ日記用のAWSプロバイダー
-# AWS provider for nyankoronikki
 provider "aws" {
   region = "ap-northeast-1" # 東京リージョン
 }
 
 # ネコ日記用ECSクラスター
-# ECS cluster for nyankoronikki
 resource "aws_ecs_cluster" "nyankoronikki" {
   name = "nyankoronikki-cluster"
 }
 
 # ネコ日記用IAMロール
-# IAM role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "nyankoronikki-ecs-task-execution-role"
 
@@ -27,39 +24,13 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
-# ECSタスク実行用ポリシー（ECRへのアクセス許可を追加）
-resource "aws_iam_role_policy" "ecs_task_execution_policy" {
-  name = "nyankoronikki-ecs-task-execution-policy"
-  role = aws_iam_role.ecs_task_execution_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = [
-          "ecr:GetAuthorizationToken",
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage"
-        ]
-        Resource = "*"
-      },
-      {
-        Effect   = "Allow"
-        Action   = [
-          "logs:CreateLogStream",
-          "logs:CreateLogGroup",
-          "logs:PutLogEvents"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
+# ECSタスク実行用のポリシーをアタッチ (ECRアクセス用)
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }
 
 # ECSタスク定義
-# ECS task definition
 resource "aws_ecs_task_definition" "nyankoronikki" {
   family                   = "nyankoronikki-task"
   cpu                      = "512"
@@ -93,7 +64,6 @@ resource "aws_ecs_task_definition" "nyankoronikki" {
 }
 
 # ECSサービス
-# ECS service
 resource "aws_ecs_service" "nyankoronikki" {
   name            = "nyankoronikki-service"
   cluster         = aws_ecs_cluster.nyankoronikki.id
