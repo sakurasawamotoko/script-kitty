@@ -1,40 +1,31 @@
-name: Terraform Plan (nyankoronikki)
+name: nyankoronikki Fargate Deploy
 
 on:
-  pull_request:
-    branches:
-      - main
   push:
     branches:
-      - feature/**
+      - main
+      - feature/nyankoronikki-fargate
+  workflow_dispatch:
 
 jobs:
   terraform:
+    name: Terraform Plan & Apply
     runs-on: ubuntu-latest
 
     steps:
-      # リポジトリをチェックアウト
-      # Checkout repository
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
-      # Terraformをセットアップ
-      # Set up Terraform
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          terraform_version: 1.6.6
+          terraform_version: 1.14.2
 
-      # Terraform初期化
-      # Terraform init
       - name: Terraform Init
-        working-directory: infra
-        run: terraform init
+        run: terraform init -backend-config="bucket=scriptkitty-terraform-state-bucket" -backend-config="key=scriptkitty/nyankoronikki/terraform.tfstate" -backend-config="region=ap-northeast-1" -reconfigure
 
-      # Terraformプラン（Secrets使用）
-      # Terraform plan using GitHub Actions secrets
       - name: Terraform Plan
-        working-directory: infra
+        working-directory: infra/にゃんころ
         env:
           CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -47,3 +38,13 @@ jobs:
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
             -lock=false
+            
+      - name: Terraform Apply
+        run: |
+          terraform apply \
+            -var "container_image=${{ secrets.CONTAINER_IMAGE }}" \
+            -var "openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+            -var "pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
+            -var "pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
+            -lock=false \
+            -auto-approve
