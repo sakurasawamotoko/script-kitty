@@ -22,10 +22,12 @@ jobs:
           terraform_version: 1.14.2
 
       - name: Terraform Init
-        run: terraform init -backend-config="bucket=scriptkitty-terraform-state-bucket" -backend-config="key=scriptkitty/nyankoronikki/terraform.tfstate" -backend-config="region=ap-northeast-1" -reconfigure
+        working-directory: infra/にゃんころ日記
+        run: |
+          terraform init -reconfigure
 
       - name: Terraform Plan
-        working-directory: infra/にゃんころ
+        working-directory: infra/にゃんころ日記
         env:
           CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -36,8 +38,8 @@ jobs:
             -var="container_image=${CONTAINER_IMAGE}" \
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
-            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-            -lock=false
+            -var="pinecone_environment=${PINECONE_ENVIRONMENT}"
+
             
       - name: Terraform Apply
         run: |
