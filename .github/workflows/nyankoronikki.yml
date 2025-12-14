@@ -6,12 +6,12 @@ on:
     branches: [main, 'feature/**']
     paths:
       - 'infra/**'
-      - 'にゃんころ/**'
+      - 'にゃんころ日記/**'
       - '.github/workflows/ci-cd.yml'
   pull_request:
     paths:
       - 'infra/**'
-      - 'にゃんころ/**'
+      - 'にゃんころ日記/**'
 
 jobs:
   infra:
