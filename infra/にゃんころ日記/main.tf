@@ -1,17 +1,14 @@
 # ネコ日記用のAWSプロバイダー
-# AWS provider for nyankoronikki
 provider "aws" {
   region = "ap-northeast-1" # 東京リージョン
 }
 
 # ネコ日記用ECSクラスター
-# ECS cluster for nyankoronikki
 resource "aws_ecs_cluster" "nyankoronikki" {
   name = "nyankoronikki-cluster"
 }
 
 # ネコ日記用IAMロール
-# IAM role for ECS task execution
 resource "aws_iam_role" "ecs_task_execution_role" {
   name = "nyankoronikki-ecs-task-execution-role"
 
@@ -27,8 +24,13 @@ resource "aws_iam_role" "ecs_task_execution_role" {
   })
 }
 
+# ECSタスク実行用のポリシーをアタッチ (ECRアクセス用)
+resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
+  role       = aws_iam_role.ecs_task_execution_role.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
+
 # ECSタスク定義
-# ECS task definition
 resource "aws_ecs_task_definition" "nyankoronikki" {
   family                   = "nyankoronikki-task"
   cpu                      = "512"
@@ -62,13 +64,13 @@ resource "aws_ecs_task_definition" "nyankoronikki" {
 }
 
 # ECSサービス
-# ECS service
 resource "aws_ecs_service" "nyankoronikki" {
   name            = "nyankoronikki-service"
   cluster         = aws_ecs_cluster.nyankoronikki.id
   task_definition = aws_ecs_task_definition.nyankoronikki.arn
   desired_count   = 1
   launch_type     = "FARGATE"
+
   network_configuration {
     assign_public_ip = true
     subnets = [
