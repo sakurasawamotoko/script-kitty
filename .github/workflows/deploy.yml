@@ -37,8 +37,7 @@ jobs:
           aws ecr describe-repositories --repository-names nyankoronikki || \
           aws ecr create-repository --repository-name nyankoronikki
           IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/nyankoronikki:${GITHUB_SHA}
-          cd にゃんころ日記
-          docker build -f Dockerfile . -t $IMAGE_URI
+          docker build -f infra/にゃんころ/Dockerfile infra/にゃんころ -t $IMAGE_URI
           docker push $IMAGE_URI
 
       - name: Update ECS task definition
