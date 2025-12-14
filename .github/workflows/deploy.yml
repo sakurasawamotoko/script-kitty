@@ -32,14 +32,13 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build Docker image
+      - name: Build & push Docker image
         run: |
-          docker build -t ${{ env.ECR_REPOSITORY }}:${GITHUB_SHA} .
-          docker tag ${{ env.ECR_REPOSITORY }}:${GITHUB_SHA} ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${GITHUB_SHA}
-
-      - name: Push Docker image to ECR
-        run: |
-          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${GITHUB_SHA}
+          aws ecr describe-repositories --repository-names nyankoronikki || \
+          aws ecr create-repository --repository-name nyankoronikki
+          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/nyankoronikki:${GITHUB_SHA}
+          docker build -f infra/にゃんころ/Dockerfile infra/にゃんころ -t $IMAGE_URI
+          docker push $IMAGE_URI
 
       - name: Update ECS task definition
         id: ecs-task

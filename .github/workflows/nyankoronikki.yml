@@ -44,25 +44,26 @@ jobs:
 
       - name: Terraform Init
         run: |
-          cd にゃんころ日記
+          cd infra/にゃんころ日記
           terraform init -reconfigure
 
       - name: Terraform Plan
         run: |
-          cd にゃんころ日記
-          terraform plan \
-            -var="container_image=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}" \
-            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-            -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-            -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
+          cd infra/にゃんころ日記
+          terraform plan 
+            -var="container_image=${CONTAINER_IMAGE}" 
+            -var="openai_api_key=${OPENAI_API_KEY}" 
+            -var="pinecone_api_key=${PINECONE_API_KEY}" 
+            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" 
             -lock=false
 
       - name: Terraform Apply
         run: |
-          cd にゃんころ日記
-          terraform apply \
-            -var="container_image=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}" \
-            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-            -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-            -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
-            -lock=false -auto-approve
+          cd infra/にゃんころ日記
+          terraform apply 
+              -var="container_image=${CONTAINER_IMAGE}" 
+              -var="openai_api_key=${OPENAI_API_KEY}" 
+              -var="pinecone_api_key=${PINECONE_API_KEY}" 
+              -var="pinecone_environment=${PINECONE_ENVIRONMENT}" 
+              -lock=false 
+              -auto-approve
