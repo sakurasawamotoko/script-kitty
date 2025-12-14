@@ -22,21 +22,28 @@ jobs:
           aws-region: ap-northeast-1
 
       - name: Terraform Init
-        run: terraform -chdir=infra/にゃんころ日記 init -reconfigure
+        run: |
+          cd infra/にゃんころ日記
+          terraform init -reconfigure
 
       - name: Terraform Plan
-        run: terraform -chdir=infra/にゃんころ日記 plan \
-              -var="container_image=${CONTAINER_IMAGE}" \
-              -var="openai_api_key=${OPENAI_API_KEY}" \
-              -var="pinecone_api_key=${PINECONE_API_KEY}" \
-              -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-              -lock=false
+        run: |
+          cd infra/にゃんころ日記
+          terraform plan 
+            -var="container_image=${CONTAINER_IMAGE}" 
+            -var="openai_api_key=${OPENAI_API_KEY}" 
+            -var="pinecone_api_key=${PINECONE_API_KEY}" 
+            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" 
+            -lock=false
+
 
       - name: Terraform Apply
-        run: terraform -chdir=infra/にゃんころ日記 apply \
-              -var="container_image=${CONTAINER_IMAGE}" \
-              -var="openai_api_key=${OPENAI_API_KEY}" \
-              -var="pinecone_api_key=${PINECONE_API_KEY}" \
-              -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-              -lock=false \
+        run: |
+          cd infra/にゃんころ日記
+          terraform apply 
+              -var="container_image=${CONTAINER_IMAGE}" 
+              -var="openai_api_key=${OPENAI_API_KEY}" 
+              -var="pinecone_api_key=${PINECONE_API_KEY}" 
+              -var="pinecone_environment=${PINECONE_ENVIRONMENT}" 
+              -lock=false 
               -auto-approve
