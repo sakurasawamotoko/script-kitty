@@ -1,65 +1,39 @@
-name: Deploy Script-Kitty
+name: nyankoronikki Fargate Deploy
 
 on:
   push:
     branches:
-      - feature/nyankoronikki-fargate  # or your main branch
-
-env:
-  AWS_REGION: ap-northeast-1
-  ECR_REPO: nyankoronikki
+      - main           # 自動で main ブランチにプッシュされたときに実行
+  workflow_dispatch:   # 手動で「Run workflow」ボタンからも実行可能
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v3
+      - name: Checkout repository
+        uses: actions/checkout@v3
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v2
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
 
-    - name: Login to Amazon ECR
-      id: login-ecr
-      uses: aws-actions/amazon-ecr-login@v1
+      - name: Terraform Init
+        run: terraform init -reconfigure
 
-    - name: Build Docker image
-      run: |
-        docker build -t ${{ env.ECR_REPO }} .
+      - name: Terraform Plan
+        run: terraform plan \
+              -var="container_image=${{ secrets.CONTAINER_IMAGE }}" \
+              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+              -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
+              -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}"
 
-    - name: Tag Docker image for ECR
-      run: |
-        IMAGE_URI=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${{ env.ECR_REPO }}:latest
-        docker tag ${{ env.ECR_REPO }}:latest $IMAGE_URI
-        echo "IMAGE_URI=$IMAGE_URI" >> $GITHUB_ENV
-
-    - name: Push Docker image to ECR
-      run: |
-        docker push $IMAGE_URI
-
-    - name: Terraform Init
-      run: terraform init -reconfigure
-      working-directory: infra/にゃんころ日記
-
-    - name: Terraform Plan
-      run: terraform plan \
-            -var="container_image=$IMAGE_URI" \
-            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-            -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-            -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
-            -lock=false
-      working-directory: infra/にゃんころ日記
-
-    - name: Terraform Apply
-      run: terraform apply \
-            -var="container_image=$IMAGE_URI" \
-            -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-            -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-            -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
-            -lock=false -auto-approve
-      working-directory: infra/にゃんころ日記
+      - name: Terraform Apply
+        run: terraform apply -var="container_image=${{ secrets.CONTAINER_IMAGE }}" \
+                             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
+                             -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
+                             -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
+                             -auto-approve
