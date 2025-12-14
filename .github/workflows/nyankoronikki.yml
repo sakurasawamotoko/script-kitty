@@ -3,37 +3,46 @@ name: nyankoronikki Fargate Deploy
 on:
   push:
     branches:
-      - main           # 自動で main ブランチにプッシュされたときに実行
-  workflow_dispatch:   # 手動で「Run workflow」ボタンからも実行可能
+      - main
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+      PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ap-northeast-1
 
     steps:
-      - name: Checkout repository
+      - name: リポジトリをチェックアウト
         uses: actions/checkout@v3
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v2
+      - name: Terraform をセットアップ
+        uses: hashicorp/setup-terraform@v2
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ap-northeast-1
+          terraform_version: 1.7.0 # 適宜 Terraform バージョンを指定
 
-      - name: Terraform Init
+      - name: Terraform 初期化
         run: terraform init -reconfigure
 
-      - name: Terraform Plan
+      - name: Terraform Plan 実行
         run: terraform plan \
-              -var="container_image=${{ secrets.CONTAINER_IMAGE }}" \
-              -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-              -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-              -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}"
+          -var="container_image=${CONTAINER_IMAGE}" \
+          -var="openai_api_key=${OPENAI_API_KEY}" \
+          -var="pinecone_api_key=${PINECONE_API_KEY}" \
+          -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
+          -lock=false
 
-      - name: Terraform Apply
-        run: terraform apply -var="container_image=${{ secrets.CONTAINER_IMAGE }}" \
-                             -var="openai_api_key=${{ secrets.OPENAI_API_KEY }}" \
-                             -var="pinecone_api_key=${{ secrets.PINECONE_API_KEY }}" \
-                             -var="pinecone_environment=${{ secrets.PINECONE_ENVIRONMENT }}" \
-                             -auto-approve
+      - name: Terraform Apply 実行
+        run: terraform apply \
+          -var="container_image=${CONTAINER_IMAGE}" \
+          -var="openai_api_key=${OPENAI_API_KEY}" \
+          -var="pinecone_api_key=${PINECONE_API_KEY}" \
+          -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
+          -lock=false \
+          -auto-approve
