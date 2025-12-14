@@ -1,63 +1,47 @@
-name: CI/CD - にゃんころ日記 (nyankoronikki Fargate Bot)
+name: Build and Deploy nyankoronikki
 
 on:
   push:
-    branches: [main, 'feature/**']
-  pull_request:
-    branches: [main]
+    branches:
+      - feature/nyankoronikki-fargate
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
-
-    env:
-      AWS_REGION: ap-northeast-1
-      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
-      ECR_REPO: nyankoronikki
-      TF_VAR_openai_api_key: ${{ secrets.OPENAI_API_KEY }}
-      TF_VAR_pinecone_api_key: ${{ secrets.PINECONE_API_KEY }}
-
     steps:
-      # リポジトリをチェックアウト (Checkout repository)
-      - uses: actions/checkout@v3
+      - name: チェックアウトリポジトリ / Checkout repository
+        uses: actions/checkout@v3
 
-      # Pythonセットアップ (Setup Python)
-      - uses: actions/setup-python@v4
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v2
         with:
-          python-version: 3.12
+          terraform_version: 1.14.2
 
-      # Docker Buildxセットアップ (Setup Docker Buildx)
-      - uses: docker/setup-buildx-action@v2
-
-      # AWS認証設定 (Configure AWS credentials)
-      - uses: aws-actions/configure-aws-credentials@v2
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ env.AWS_REGION }}
-
-      # ECRログイン (Login to ECR)
-      - uses: aws-actions/amazon-ecr-login@v1
-
-      # Dockerイメージビルド＆プッシュ (Build & push Docker image)
-      - name: Build & Push Docker Image
-        run: |
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO}:${GITHUB_SHA}
-          docker build -f にゃんころ日記/Dockerfile にゃんころ日記 -t $IMAGE_URI
-          docker push $IMAGE_URI
-          echo "container_image=$IMAGE_URI" >> $GITHUB_ENV
-
-      # Terraformセットアップ (Setup Terraform)
-      - uses: hashicorp/setup-terraform@v2
-        with:
-          terraform_version: 1.6.0
-
-      # Terraform init (初期化)
       - name: Terraform Init
-        working-directory: infra/にゃんころ日記
-        run: terraform init
+        run: terraform init -input=false
 
-      # Terraform apply (適用)
+      - name: Terraform Plan
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+          CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
+        run: terraform plan -var "container_image=${CONTAINER_IMAGE}" \
+                            -var "openai_api_key=${OPENAI_API_KEY}" \
+                            -var "pinecone_api_key=${PINECONE_API_KEY}" \
+                            -var "pinecone_environment=${PINECONE_ENVIRONMENT}" \
+                            -lock=false
+
       - name: Terraform Apply
-        working-directory: infra/にゃんころ日記
-        run: terraform apply -auto-approve -var="container_image=${{ env.container_image }}"
+        if: github.ref == 'refs/heads/feature/nyankoronikki-fargate'
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+          CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
+        run: terraform apply -auto-approve \
+                            -var "container_image=${CONTAINER_IMAGE}" \
+                            -var "openai_api_key=${OPENAI_API_KEY}" \
+                            -var "pinecone_api_key=${PINECONE_API_KEY}" \
+                            -var "pinecone_environment=${PINECONE_ENVIRONMENT}" \
+                            -lock=false

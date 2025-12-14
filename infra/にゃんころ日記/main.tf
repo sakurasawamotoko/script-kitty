@@ -1,63 +1,59 @@
+# ネコ日記用のAWSプロバイダー
+# AWS provider for nyankoronikki
 provider "aws" {
-  region = var.region
+  region = "ap-northeast-1" # 東京リージョン
 }
 
-# ECSクラスター作成 (Create ECS Cluster)
+# ネコ日記用ECSクラスター
+# ECS cluster for nyankoronikki
 resource "aws_ecs_cluster" "nyankoronikki" {
   name = "nyankoronikki-cluster"
 }
 
-# CloudWatchロググループ (CloudWatch log group for ECS)
-resource "aws_cloudwatch_log_group" "nyankoronikki" {
-  name              = "/ecs/nyankoronikki"
-  retention_in_days = 30
-}
-
-# Fargateタスク実行用IAMロール (IAM Role for Fargate task execution)
-resource "aws_iam_role" "fargate_exec" {
-  name = "nyankoronikki-fargate-exec"
+# ネコ日記用IAMロール
+# IAM role for ECS task execution
+resource "aws_iam_role" "ecs_task_execution_role" {
+  name = "nyankoronikki-ecs-task-execution-role"
 
   assume_role_policy = jsonencode({
-    Version = "2012-10-17",
-    Statement = [{
-      Action    = "sts:AssumeRole",
-      Principal = { Service = "ecs-tasks.amazonaws.com" },
-      Effect    = "Allow"
-    }]
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Principal = { Service = "ecs-tasks.amazonaws.com" }
+        Action = "sts:AssumeRole"
+      }
+    ]
   })
 }
 
-# IAMロールにECS実行ポリシーをアタッチ (Attach ECS task execution policy)
-resource "aws_iam_role_policy_attachment" "exec_policy" {
-  role       = aws_iam_role.fargate_exec.name
-  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
-}
-
-# Fargateタスク定義 (Fargate Task Definition)
-resource "aws_ecs_task_definition" "nyankoronikki_task" {
+# ECSタスク定義
+# ECS task definition
+resource "aws_ecs_task_definition" "nyankoronikki" {
   family                   = "nyankoronikki-task"
+  cpu                      = "512"
+  memory                   = "1024"
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
-  cpu                      = 512
-  memory                   = 1024
-  execution_role_arn       = aws_iam_role.fargate_exec.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution_role.arn
 
   container_definitions = jsonencode([
     {
-      name      = "nyankoronikki"
+      name      = "nyankoronikki-container"
       image     = var.container_image
+      cpu       = 512
+      memory    = 1024
       essential = true
-      # 環境変数 (Environment variables)
       environment = [
         { name = "OPENAI_API_KEY", value = var.openai_api_key },
-        { name = "PINECONE_API_KEY", value = var.pinecone_api_key }
+        { name = "PINECONE_API_KEY", value = var.pinecone_api_key },
+        { name = "PINECONE_ENVIRONMENT", value = var.pinecone_environment }
       ]
-      # CloudWatchログ設定 (CloudWatch log configuration)
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = aws_cloudwatch_log_group.nyankoronikki.name
-          "awslogs-region"        = var.region
+          "awslogs-group"         = "/ecs/nyankoronikki"
+          "awslogs-region"        = "ap-northeast-1"
           "awslogs-stream-prefix" = "ecs"
         }
       }
@@ -65,20 +61,21 @@ resource "aws_ecs_task_definition" "nyankoronikki_task" {
   ])
 }
 
-# Fargateサービス (Fargate Service for 24/7 bot)
-resource "aws_ecs_service" "nyankoronikki_service" {
+# ECSサービス
+# ECS service
+resource "aws_ecs_service" "nyankoronikki" {
   name            = "nyankoronikki-service"
   cluster         = aws_ecs_cluster.nyankoronikki.id
-  task_definition = aws_ecs_task_definition.nyankoronikki_task.arn
+  task_definition = aws_ecs_task_definition.nyankoronikki.arn
   desired_count   = 1
   launch_type     = "FARGATE"
 
   network_configuration {
-    subnets         = var.subnets
-    security_groups = [var.security_group]
     assign_public_ip = true
+    subnets          = ["subnet-xxxxxx"]       # 適切なサブネットIDに置き換え / replace with your subnet ID
+    security_groups  = ["sg-xxxxxx"]           # 適切なセキュリティグループIDに置き換え / replace with your security group
   }
 
-  # IAMロールポリシーの依存関係 (Ensure policy attachment exists before service)
-  depends_on = [aws_iam_role_policy_attachment.exec_policy]
+  deployment_minimum_healthy_percent = 100
+  deployment_maximum_percent         = 200
 }
