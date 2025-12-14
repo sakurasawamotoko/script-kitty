@@ -1,5 +1,5 @@
 # .github/workflows/ci-cd.yml
-name: CI/CD - Script-Kitty
+name: CI/CD - にゃんころ日記
 
 on:
   push:
