@@ -1,0 +1,60 @@
+name: nyankoronikki Fargate Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - feature/nyankoronikki-fargate
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v2
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+
+      - name: Terraform Init
+        working-directory: ./infra/にゃんころ日記
+        run: terraform init -reconfigure
+
+      - name: Terraform Plan
+        working-directory: ./infra/にゃんころ日記
+        env:
+          CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+        run: |
+          terraform plan \
+            -var="container_image=${CONTAINER_IMAGE}" \
+            -var="openai_api_key=${OPENAI_API_KEY}" \
+            -var="pinecone_api_key=${PINECONE_API_KEY}" \
+            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
+            -lock=false
+
+      - name: Terraform Apply
+        working-directory: ./infra/にゃんころ日記
+        env:
+          CONTAINER_IMAGE: ${{ secrets.CONTAINER_IMAGE }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
+          PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+        run: |
+          terraform apply \
+            -var="container_image=${CONTAINER_IMAGE}" \
+            -var="openai_api_key=${OPENAI_API_KEY}" \
+            -var="pinecone_api_key=${PINECONE_API_KEY}" \
+            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
+            -lock=false \
+            -auto-approve
+
