@@ -1,101 +1,93 @@
-# .github/workflows/ci-cd.yml
-name: CI/CD - にゃんころ日記
+# .github/workflows/nyankoronikki.yml
+name: CI/CD - にゃんころ日記 Fargate
 
 on:
   push:
-    branches: [main, 'feature/**']
     paths:
-      - 'infra/**'
-      - 'にゃんころ日記/**'
-      - '.github/workflows/ci-cd.yml'
+      - "にゃんころ日記/**"
+      - "infra/**"
+      - ".github/workflows/nyankoronikki.yml"
+    branches: [main, 'feature/**']
   pull_request:
     paths:
-      - 'infra/**'
-      - 'にゃんころ日記/**'
+      - "にゃんころ日記/**"
+      - "infra/**"
 
 jobs:
-  infra:
+  build-and-deploy:
     runs-on: ubuntu-latest
+
     env:
-      CONTAINER_IMAGE: nyankoronikki
       AWS_REGION: ap-northeast-1
+      CONTAINER_IMAGE: nyankoronikki
+      CLUSTER_NAME: nyankoronikki-cluster
+      SERVICE_NAME: nyankoronikki-service
+      TASK_DEFINITION_NAME: nyankoronikki-task
       OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
       PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
+      AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+
     steps:
       - uses: actions/checkout@v3
 
+      # Set up Terraform for infra
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v2
         with:
           terraform_version: 1.9.0
 
-      - name: Terraform Init & Plan
+      - name: Terraform Init & Apply
         run: |
           cd infra/にゃんころ日記
           terraform init -reconfigure
-          terraform plan \
-            -var="container_image=${CONTAINER_IMAGE}" \
-            -var="openai_api_key=${OPENAI_API_KEY}" \
-            -var="pinecone_api_key=${PINECONE_API_KEY}" \
-            -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-            -refresh=false \
-            -lock=false
-
-      - name: Terraform Apply
-        run: |
-          cd infra/にゃんころ日記
           terraform apply \
             -var="container_image=${CONTAINER_IMAGE}" \
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-            -lock=false \
             -auto-approve
 
-  deploy:
-    runs-on: ubuntu-latest
-    needs: infra
-    env:
-      AWS_REGION: ap-northeast-1
-      FUNCTION_NAME: nyankoro-lambda
-      CONTAINER_IMAGE: nyankoronikki
-      LAMBDA_EXECUTION_ROLE_ARN: ${{ secrets.LAMBDA_EXECUTION_ROLE_ARN }}
-    steps:
-      - uses: actions/checkout@v3
-
+      # AWS credentials
       - uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Get AWS Account ID
-        run: |
-          echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
-
+      # Ensure ECR repo exists
       - name: Ensure ECR repo exists
         run: |
           aws ecr describe-repositories --repository-names ${CONTAINER_IMAGE} || \
           aws ecr create-repository --repository-name ${CONTAINER_IMAGE}
 
+      # Build & push Docker image
       - name: Build & Push Docker image
         run: |
           IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
           docker build -f にゃんころ日記/Dockerfile にゃんころ日記 -t $IMAGE_URI
           docker push $IMAGE_URI
 
-      - name: Deploy to Lambda
+      # Update ECS Fargate service
+      - name: Deploy to ECS Fargate
         run: |
           IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
-          if aws lambda get-function --function-name $FUNCTION_NAME; then
-            aws lambda update-function-code \
-              --function-name $FUNCTION_NAME \
-              --image-uri $IMAGE_URI
-          else
-            aws lambda create-function \
-              --function-name $FUNCTION_NAME \
-              --package-type Image \
-              --code ImageUri=$IMAGE_URI \
-              --role $LAMBDA_EXECUTION_ROLE_ARN
-          fi
+
+          # Register new task definition revision
+          TASK_DEFINITION_JSON=$(aws ecs register-task-definition \
+            --family ${TASK_DEFINITION_NAME} \
+            --network-mode awsvpc \
+            --requires-compatibilities FARGATE \
+            --cpu "512" \
+            --memory "1024" \
+            --container-definitions "[{\"name\":\"${CONTAINER_IMAGE}\",\"image\":\"${IMAGE_URI}\",\"essential\":true,\"portMappings\":[{\"containerPort\":80,\"protocol\":\"tcp\"}]}]" \
+            --query 'taskDefinition.taskDefinitionArn' \
+            --output text)
+
+          echo "New task definition ARN: $TASK_DEFINITION_JSON"
+
+          # Update ECS service
+          aws ecs update-service \
+            --cluster ${CLUSTER_NAME} \
+            --service ${SERVICE_NAME} \
+            --task-definition $TASK_DEFINITION_JSON
