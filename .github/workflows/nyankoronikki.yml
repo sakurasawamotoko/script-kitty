@@ -57,7 +57,6 @@ jobs:
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" 
             -lock=false
 
-
       - name: Terraform Apply
         run: |
           cd infra/にゃんころ日記
