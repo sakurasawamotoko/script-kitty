@@ -69,11 +69,16 @@ resource "aws_ecs_service" "nyankoronikki" {
   task_definition = aws_ecs_task_definition.nyankoronikki.arn
   desired_count   = 1
   launch_type     = "FARGATE"
-
   network_configuration {
     assign_public_ip = true
-    subnets          = ["subnet-xxxxxx"]       # 適切なサブネットIDに置き換え / replace with your subnet ID
-    security_groups  = ["sg-xxxxxx"]           # 適切なセキュリティグループIDに置き換え / replace with your security group
+    subnets = [
+      "subnet-0f00c572a0b838597",  # ap-northeast-1a
+      "subnet-01445006ae2805432",  # ap-northeast-1c
+      "subnet-04cbf560e48473065"   # ap-northeast-1d
+    ]
+    security_groups = [
+      "sg-0a978c481fdd7e06f"  # nyankoronikki-ecs-sg
+    ]
   }
 
   deployment_minimum_healthy_percent = 100
