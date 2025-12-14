@@ -34,18 +34,17 @@ jobs:
         run: |
           cd infra/にゃんころ日記
           terraform init -reconfigure
-          terraform plan \
+          terraform plan -input=false \
             -var="container_image=${CONTAINER_IMAGE}" \
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
-            -refresh=false \
             -lock=false
 
       - name: Terraform Apply
         run: |
           cd infra/にゃんころ日記
-          terraform apply \
+          terraform apply -input=false \
             -var="container_image=${CONTAINER_IMAGE}" \
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
@@ -82,7 +81,7 @@ jobs:
       - name: Build & Push Docker image
         run: |
           IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
-          cd にゃんころ
+          cd infra/にゃんころ
           docker build -t $IMAGE_URI .
           docker push $IMAGE_URI
 
