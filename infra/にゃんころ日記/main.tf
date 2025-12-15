@@ -23,6 +23,10 @@ resource "aws_iam_role" "ecs_task_execution_role" {
     ]
   })
 }
+resource "aws_cloudwatch_log_group" "nyankoronikki" {
+  name              = "/ecs/nyankoronikki"
+  retention_in_days = 7
+}
 
 # ECSタスク実行用のポリシーをアタッチ (ECRアクセス用)
 resource "aws_iam_role_policy_attachment" "ecs_task_execution_role_policy" {
@@ -49,12 +53,14 @@ resource "aws_ecs_task_definition" "nyankoronikki" {
       environment = [
         { name = "OPENAI_API_KEY", value = var.openai_api_key },
         { name = "PINECONE_API_KEY", value = var.pinecone_api_key },
-        { name = "PINECONE_ENVIRONMENT", value = var.pinecone_environment }
+        { name = "PINECONE_ENVIRONMENT", value = var.pinecone_environment },
+        { name = "DISCORD_BOT_TOKEN", value = var.discord_bot_token },
+        { name = "DISCORD_GUILD_ID", value = var.discord_guild_id }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          "awslogs-group"         = "/ecs/nyankoronikki"
+          "awslogs-group"         = aws_cloudwatch_log_group.nyankoronikki.name
           "awslogs-region"        = "ap-northeast-1"
           "awslogs-stream-prefix" = "ecs"
         }
