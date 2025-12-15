@@ -27,6 +27,7 @@ jobs:
       PINECONE_API_KEY: ${{ secrets.PINECONE_API_KEY }}
       PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+      TASK_EXECUTION_ROLE_ARN: ${{ secrets.TASK_EXECUTION_ROLE_ARN }}
 
     steps:
       - uses: actions/checkout@v3
@@ -81,6 +82,7 @@ jobs:
             --requires-compatibilities FARGATE \
             --cpu "512" \
             --memory "1024" \
+            --execution-role-arn ${TASK_EXECUTION_ROLE_ARN} \
             --container-definitions "[{\"name\":\"${CONTAINER_IMAGE}\",\"image\":\"${IMAGE_URI}\",\"essential\":true,\"portMappings\":[{\"containerPort\":80,\"protocol\":\"tcp\"}]}]" \
             --query 'taskDefinition.taskDefinitionArn' \
             --output text)
