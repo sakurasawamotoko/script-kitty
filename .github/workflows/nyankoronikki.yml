@@ -8,10 +8,6 @@ on:
       - "infra/**"
       - ".github/workflows/nyankoronikki.yml"
     branches: [main, 'feature/**']
-  pull_request:
-    paths:
-      - "にゃんころ日記/**"
-      - "infra/**"
 
 jobs:
   build-and-deploy:
