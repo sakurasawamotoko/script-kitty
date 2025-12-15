@@ -24,6 +24,9 @@ jobs:
       PINECONE_ENVIRONMENT: ${{ secrets.PINECONE_ENVIRONMENT }}
       AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
       TASK_EXECUTION_ROLE_ARN: ${{ secrets.TASK_EXECUTION_ROLE_ARN }}
+      DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
+      DISCORD_GUILD_ID: ${{ secrets.DISCORD_GUILD_ID }}
+      
 
     steps:
       - uses: actions/checkout@v3
@@ -49,6 +52,8 @@ jobs:
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
+            -var="discord_bot_token=${secrets.DISCORD_BOT_TOKEN}" \
+            -var="discord_guild_id=${secrets.DISCORD_GUILD_ID}" \
             -auto-approve
 
       # Ensure ECR repo exists
