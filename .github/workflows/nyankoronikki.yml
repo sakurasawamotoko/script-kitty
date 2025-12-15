@@ -48,7 +48,7 @@ jobs:
           cd infra/にゃんころ日記
           terraform init -reconfigure
           terraform apply \
-            -var="container_image=${CONTAINER_IMAGE}" \
+            -var="container_image=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}" \
             -var="openai_api_key=${OPENAI_API_KEY}" \
             -var="pinecone_api_key=${PINECONE_API_KEY}" \
             -var="pinecone_environment=${PINECONE_ENVIRONMENT}" \
@@ -73,31 +73,3 @@ jobs:
           docker build -f にゃんころ日記/Dockerfile にゃんころ日記 -t $IMAGE_URI_SHA -t $IMAGE_URI_LATEST
           docker push $IMAGE_URI_SHA
           docker push $IMAGE_URI_LATEST
-
-      # Update ECS Fargate service
-      - name: Deploy to ECS Fargate
-        run: |
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
-
-          TASK_DEFINITION_JSON=$(aws ecs register-task-definition \
-            --family ${TASK_DEFINITION_NAME} \
-            --network-mode awsvpc \
-            --requires-compatibilities FARGATE \
-            --cpu "512" \
-            --memory "1024" \
-            --execution-role-arn ${TASK_EXECUTION_ROLE_ARN} \
-            --container-definitions "[{\"name\":\"${CONTAINER_IMAGE}\",\"image\":\"${IMAGE_URI}\",\"essential\":true,\"portMappings\":[{\"containerPort\":80,\"protocol\":\"tcp\"}]}]" \
-            --query 'taskDefinition.taskDefinitionArn' \
-            --output text)
-
-          echo "New task definition ARN: $TASK_DEFINITION_JSON"
-
-          # Update ECS service
-          aws ecs update-service \
-            --cluster ${CLUSTER_NAME} \
-            --service ${SERVICE_NAME} \
-            --task-definition $TASK_DEFINITION_JSON
-
-          aws ecs wait services-stable \
-            --cluster ${CLUSTER_NAME} \
-            --services ${SERVICE_NAME}
