@@ -27,3 +27,15 @@ variable "pinecone_environment" {
   type        = string
   description = "Pinecone環境（リージョン） / Pinecone environment (region)"
 }
+
+variable "discord_bot_token" {
+  type        = string
+  description = "Discord bot token"
+  sensitive   = true
+}
+
+variable "discord_guild_id" {
+  type        = string
+  description = "Discord guild ID"
+  sensitive   = true
+}
