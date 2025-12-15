@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - "にゃんころ/**"
-      - ".github/workflows/nyankころ.yml"
+      - ".github/workflows/nyankoro.yml"
     branches: [main, 'feature/**']
   pull_request:
     paths:
