@@ -66,16 +66,18 @@ jobs:
       # Build & push Docker image
       - name: Build & Push Docker image
         run: |
-          IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
-          docker build -f にゃんころ日記/Dockerfile にゃんころ日記 -t $IMAGE_URI
-          docker push $IMAGE_URI
+          IMAGE_URI_SHA=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
+          IMAGE_URI_LATEST=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:latest
+
+          docker build -f にゃんころ日記/Dockerfile にゃんころ日記 にゃんころ日記 -t $IMAGE_URI_SHA -t $IMAGE_URI_LATEST
+          docker push $IMAGE_URI_SHA
+          docker push $IMAGE_URI_LATEST
 
       # Update ECS Fargate service
       - name: Deploy to ECS Fargate
         run: |
           IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${CONTAINER_IMAGE}:${GITHUB_SHA}
 
-          # Register new task definition revision
           TASK_DEFINITION_JSON=$(aws ecs register-task-definition \
             --family ${TASK_DEFINITION_NAME} \
             --network-mode awsvpc \
@@ -94,3 +96,7 @@ jobs:
             --cluster ${CLUSTER_NAME} \
             --service ${SERVICE_NAME} \
             --task-definition $TASK_DEFINITION_JSON
+
+          aws ecs wait services-stable \
+            --cluster ${CLUSTER_NAME} \
+            --services ${SERVICE_NAME}
